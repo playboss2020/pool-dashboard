@@ -114,7 +114,10 @@ function HealthRow({
 
 function DeviceHealthSheet({ device, onClose }: { device: PoolDevice | null; onClose: () => void }) {
   const cloudOnline = device?.online_status === "online" && seenRecently(device?.last_seen);
-  const nodeOnline = device?.node_online === true || seenRecently(device?.node_last_seen, 20000);
+  // The hub is the only thing that reports node status. If the hub is offline,
+  // we have no fresh information about the node — show it as Lost regardless
+  // of the stale value that was last reported.
+  const nodeOnline = cloudOnline && (device?.node_online === true || seenRecently(device?.node_last_seen, 20000));
   const wifiRssi = device?.wifi_rssi ?? null;
   const loraRssi = device?.lora_rssi ?? null;
   const loraSnr = device?.lora_snr ?? null;
@@ -203,8 +206,16 @@ function CalibrationPicker({
   }
 
   return (
-    <div className="calibration-backdrop" role="dialog" aria-modal="true">
-      <div className="calibration-sheet">
+    <div className="calibration-backdrop" role="dialog" aria-modal="true" onClick={onCancel}>
+      <div className="calibration-sheet" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className="calibration-close"
+          onClick={onCancel}
+          aria-label={`Close ${title}`}
+        >
+          <X size={20} />
+        </button>
         <div className="calibration-title">{title}</div>
 
         <div
@@ -435,7 +446,8 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
   const cloudOnline = device?.online_status === "online" && seenRecently(device?.last_seen);
-  const nodeOnline = device?.node_online === true || seenRecently(device?.node_last_seen, 20000);
+  // Node status is only meaningful when we can hear from the hub.
+  const nodeOnline = cloudOnline && (device?.node_online === true || seenRecently(device?.node_last_seen, 20000));
 
   useEffect(() => {
     setTempOffset(typeof device?.temp_calibration_offset === "number" ? device.temp_calibration_offset : 0);

@@ -315,11 +315,33 @@ button:disabled {
 }
 
 .calibration-sheet {
+  position: relative;
   overflow: hidden;
   border-radius: 24px 24px 0 0;
   color: #1b1f24;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 -16px 44px rgba(11, 32, 49, 0.24);
+}
+
+.calibration-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 35, 50, 0.06);
+  color: #475467;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s, color 0.15s;
+}
+.calibration-close:hover {
+  background: rgba(15, 35, 50, 0.12);
+  color: #102a3b;
 }
 
 .calibration-title {
