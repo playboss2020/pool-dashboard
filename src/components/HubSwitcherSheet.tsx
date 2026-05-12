@@ -1,44 +1,14 @@
-import { CheckCircle2, X } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Plus, Search, X } from "lucide-react";
 import type { PoolDevice } from "../lib/deviceApi";
-
-type HubSwitcherItem = Pick<
-  PoolDevice,
-  "device_id" | "serial_number" | "name" | "current_temp" | "pump_on" | "heater_enabled" | "online_status" | "last_seen"
-> & {
-  preview?: boolean;
-};
 
 type HubSwitcherSheetProps = {
   devices: PoolDevice[];
   selectedDeviceId: string;
   onClose: () => void;
   onSelectDevice: (deviceId: string) => void;
+  onAddDevice?: () => void;
 };
-
-const previewHubs: HubSwitcherItem[] = [
-  {
-    device_id: "preview-ocean-villa",
-    serial_number: "WF-POOL-000124",
-    name: "Ocean Villa",
-    current_temp: 84,
-    pump_on: true,
-    heater_enabled: false,
-    online_status: "online",
-    last_seen: new Date().toISOString(),
-    preview: true,
-  },
-  {
-    device_id: "preview-lake-house",
-    serial_number: "WF-POOL-000125",
-    name: "Lake House",
-    current_temp: 78,
-    pump_on: false,
-    heater_enabled: true,
-    online_status: "offline",
-    last_seen: null,
-    preview: true,
-  },
-];
 
 function formatValue(value: number | null | undefined, suffix = "") {
   if (value === null || value === undefined || Number.isNaN(value)) return "--";
@@ -54,19 +24,30 @@ function hubStatus(device: Pick<PoolDevice, "last_seen" | "online_status">) {
   return device.online_status === "online" && wasSeenRecently(device.last_seen) ? "Online" : "Offline";
 }
 
-export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectDevice }: HubSwitcherSheetProps) {
-  const realDevices = devices.length > 0 ? devices : [];
-  const showPreview = realDevices.length < 2;
+export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectDevice, onAddDevice }: HubSwitcherSheetProps) {
+  const [searchQuery, setSearchQuery] = useState("");
 
-  function renderHubCard(hub: HubSwitcherItem) {
-    const selected = hub.device_id === selectedDeviceId && !hub.preview;
+  const trimmed = searchQuery.trim().toLowerCase();
+  const filteredDevices = trimmed
+    ? devices.filter((device) => {
+        const haystack = [
+          device.name ?? "",
+          device.serial_number ?? "",
+          device.device_id ?? "",
+        ].join(" ").toLowerCase();
+        return haystack.includes(trimmed);
+      })
+    : devices;
+
+  function renderHubCard(hub: PoolDevice) {
+    const selected = hub.device_id === selectedDeviceId;
     const status = hubStatus(hub);
     return (
       <button
-        className={selected ? "hub-switch-card selected" : hub.preview ? "hub-switch-card preview" : "hub-switch-card"}
+        className={selected ? "hub-switch-card selected" : "hub-switch-card"}
         type="button"
         key={hub.device_id}
-        disabled={hub.preview || selected}
+        disabled={selected}
         onClick={() => onSelectDevice(hub.device_id)}
       >
         <div className="hub-switch-main">
@@ -86,16 +67,14 @@ export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectD
             <CheckCircle2 size={14} />
             Active
           </span>
-        ) : hub.preview ? (
-          <span className="hub-selected-pill preview">Preview</span>
         ) : null}
       </button>
     );
   }
 
   return (
-    <div className="calibration-backdrop" role="dialog" aria-modal="true">
-      <div className="hub-switch-sheet">
+    <div className="calibration-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="hub-switch-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="health-sheet-header">
           <div>
             <span className="eyebrow">My Hubs</span>
@@ -106,18 +85,54 @@ export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectD
           </button>
         </div>
 
-        <div className="hub-switch-list">
-          {realDevices.length > 0 ? realDevices.map(renderHubCard) : (
-            <div className="hub-switch-empty">No claimed hubs yet. Add one from Settings using its serial number.</div>
-          )}
+        <div className="hub-switch-toolbar">
+          <div className="hub-switch-search">
+            <Search size={16} />
+            <input
+              type="text"
+              placeholder="Search by name or serial…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                className="hub-switch-search-clear"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            ) : null}
+          </div>
+          {onAddDevice ? (
+            <button
+              type="button"
+              className="hub-switch-add"
+              onClick={onAddDevice}
+              aria-label="Add a new hub"
+              title="Claim a new hub"
+            >
+              <Plus size={18} />
+            </button>
+          ) : null}
         </div>
 
-        {showPreview ? (
-          <div className="hub-preview-block">
-            <span className="eyebrow">Preview layout</span>
-            <div className="hub-switch-list">{previewHubs.map(renderHubCard)}</div>
-          </div>
-        ) : null}
+        <div className="hub-switch-list">
+          {devices.length === 0 ? (
+            <div className="hub-switch-empty">
+              <strong>No claimed hubs yet</strong>
+              <span>Tap the + above to claim your first hub by serial number.</span>
+            </div>
+          ) : filteredDevices.length === 0 ? (
+            <div className="hub-switch-empty">
+              <strong>No hubs match "{searchQuery}"</strong>
+              <span>Try a different serial, name, or address.</span>
+            </div>
+          ) : (
+            filteredDevices.map(renderHubCard)
+          )}
+        </div>
       </div>
     </div>
   );

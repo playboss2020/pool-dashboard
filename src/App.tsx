@@ -198,6 +198,11 @@ export default function App() {
             selectDeviceId(nextDeviceId);
             window.location.reload();
           }}
+          onAddDevice={() => {
+            setShowHubSwitcher(false);
+            setActiveTab("settings");
+            setShowAddDevice(true);
+          }}
         />
       ) : null}
       {showAddDevice ? <AddDeviceSheet onCancel={() => setShowAddDevice(false)} onClaimed={handleDeviceClaimed} /> : null}

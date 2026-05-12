@@ -660,14 +660,98 @@ button:disabled {
 }
 
 .hub-switch-empty {
-  padding: 16px;
+  display: grid;
+  gap: 4px;
+  padding: 20px 16px;
   border-radius: 18px;
   color: #6d8aa1;
   background: #eef7fb;
   font-size: 13px;
-  font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.5;
+  text-align: center;
 }
+.hub-switch-empty strong {
+  display: block;
+  color: #12314b;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+.hub-switch-empty span {
+  font-weight: 600;
+}
+
+.hub-switch-toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 14px 18px 8px;
+}
+
+.hub-switch-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #eef7fb;
+  border: 1px solid rgba(11, 131, 185, 0.14);
+  border-radius: 14px;
+  padding: 0 12px;
+  min-height: 44px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hub-switch-search:focus-within {
+  border-color: rgba(11, 131, 185, 0.45);
+  box-shadow: 0 0 0 3px rgba(11, 131, 185, 0.12);
+  background: white;
+}
+.hub-switch-search svg {
+  color: #6b879d;
+  flex-shrink: 0;
+}
+.hub-switch-search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  padding: 0 8px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #12314b;
+  min-width: 0;
+}
+.hub-switch-search input::placeholder { color: #94a8b6; }
+.hub-switch-search-clear {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 60, 90, 0.08);
+  color: #475467;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.hub-switch-search-clear:hover { background: rgba(15, 60, 90, 0.16); }
+
+.hub-switch-add {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2eb6e8, #0b83b9);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(11, 131, 185, 0.32);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hub-switch-add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(11, 131, 185, 0.4);
+}
+.hub-switch-add:active { transform: translateY(0); }
 
 .rate-sheet {
   display: grid;
