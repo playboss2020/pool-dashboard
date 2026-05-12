@@ -21,10 +21,20 @@ import "./styles.css";
 
 type Tab = "dashboard" | "schedules" | "analytics" | "enterprise" | "alerts" | "settings";
 const claimSuccessStorageKey = "pool-dashboard-claim-success";
-const enterpriseEnabled = import.meta.env.VITE_ENTERPRISE_DASHBOARD_ENABLED === "true";
 
-function getInitialTab(): Tab {
-  if (enterpriseEnabled) {
+const enterpriseFeatureFlag = import.meta.env.VITE_ENTERPRISE_DASHBOARD_ENABLED === "true";
+const adminEmailList: string[] = ((import.meta.env.VITE_ADMIN_EMAILS as string | undefined) ?? "")
+  .split(",")
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+function isAdminEmail(email: string | undefined | null) {
+  if (!email) return false;
+  return adminEmailList.includes(email.toLowerCase());
+}
+
+function getInitialTab(canSeeEnterprise: boolean): Tab {
+  if (canSeeEnterprise) {
     try {
       const params = new URLSearchParams(window.location.search);
       if (params.get("smart_home") === "google_connected") return "enterprise";
@@ -36,13 +46,15 @@ function getInitialTab(): Tab {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>(getInitialTab);
+  const auth = useAuth();
+  const isAdmin = isAdminEmail(auth.user?.email);
+  const enterpriseEnabled = enterpriseFeatureFlag && isAdmin;
+  const [activeTab, setActiveTab] = useState<Tab>(() => getInitialTab(enterpriseEnabled));
   const [showHubSwitcher, setShowHubSwitcher] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState("");
   const [subSheetOpen, setSubSheetOpen] = useState(false);
   const [subSheetReason, setSubSheetReason] = useState<string | undefined>();
-  const auth = useAuth();
   const subscription = useSubscription(auth.user?.id);
   const { device, loading, error, refresh, refreshBurst } = useDevice();
   const devices = useDevices(Boolean(auth.user));
