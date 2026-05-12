@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, Plus, Search, X } from "lucide-react";
 import type { PoolDevice } from "../lib/deviceApi";
 
@@ -26,6 +27,28 @@ function hubStatus(device: Pick<PoolDevice, "last_seen" | "online_status">) {
 
 export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectDevice, onAddDevice }: HubSwitcherSheetProps) {
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Lock the dashboard scroll container while the sheet is open and restore
+  // its scroll position when it closes — same pattern as SubscriptionSheet.
+  useEffect(() => {
+    const scrollEl = document.querySelector<HTMLElement>(".app-content");
+    const savedScrollTop = scrollEl?.scrollTop ?? 0;
+    const prevOverflow = scrollEl?.style.overflow ?? "";
+    const prevTouchAction = scrollEl?.style.touchAction ?? "";
+    if (scrollEl) {
+      scrollEl.style.overflow = "hidden";
+      scrollEl.style.touchAction = "none";
+    }
+    return () => {
+      if (scrollEl) {
+        scrollEl.style.overflow = prevOverflow;
+        scrollEl.style.touchAction = prevTouchAction;
+        requestAnimationFrame(() => {
+          scrollEl.scrollTop = savedScrollTop;
+        });
+      }
+    };
+  }, []);
 
   const trimmed = searchQuery.trim().toLowerCase();
   const filteredDevices = trimmed
@@ -72,7 +95,7 @@ export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectD
     );
   }
 
-  return (
+  return createPortal(
     <div className="calibration-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
       <div className="hub-switch-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="health-sheet-header">
@@ -134,6 +157,7 @@ export function HubSwitcherSheet({ devices, selectedDeviceId, onClose, onSelectD
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

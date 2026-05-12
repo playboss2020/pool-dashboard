@@ -576,20 +576,20 @@ button:disabled {
 .hub-switch-card {
   position: relative;
   display: grid;
-  gap: 10px;
+  gap: 7px;
   width: 100%;
-  padding: 13px;
+  padding: 11px 12px;
   border: 0;
-  border-radius: 20px;
+  border-radius: 14px;
   color: #153956;
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(10, 130, 183, 0.09), 0 8px 18px rgba(21, 103, 145, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(10, 130, 183, 0.09), 0 4px 12px rgba(21, 103, 145, 0.06);
   text-align: left;
 }
 
 .hub-switch-card.selected {
   background: #ecf9ff;
-  box-shadow: inset 0 0 0 2px rgba(10, 132, 189, 0.25), 0 8px 18px rgba(21, 103, 145, 0.08);
+  box-shadow: inset 0 0 0 2px rgba(10, 132, 189, 0.3), 0 4px 12px rgba(21, 103, 145, 0.08);
 }
 
 .hub-switch-card.preview {
@@ -598,69 +598,80 @@ button:disabled {
 
 .hub-switch-main {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
+  padding-right: 60px; /* leave room for Active pill */
 }
 
 .hub-switch-main strong {
   display: block;
   color: #143a58;
-  font-size: 17px;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hub-switch-main small {
   display: block;
-  margin-top: 3px;
+  margin-top: 1px;
   color: #7893a6;
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
 }
 
 .hub-status-dot {
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
   background: #d76545;
-  box-shadow: 0 0 0 4px rgba(215, 101, 69, 0.15);
+  box-shadow: 0 0 0 3px rgba(215, 101, 69, 0.15);
+  flex-shrink: 0;
 }
 
 .hub-status-dot.online {
   background: #20aa72;
-  box-shadow: 0 0 0 4px rgba(32, 170, 114, 0.14);
+  box-shadow: 0 0 0 3px rgba(32, 170, 114, 0.14);
 }
 
 .hub-switch-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
+  gap: 5px;
 }
 
 .hub-switch-metrics span {
   min-width: 0;
-  padding: 7px 8px;
-  border-radius: 12px;
+  padding: 5px 7px;
+  border-radius: 8px;
   color: #5f7f95;
   background: #eef7fb;
-  font-size: 11px;
-  font-weight: 850;
+  font-size: 10px;
+  font-weight: 800;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .hub-selected-pill {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 24px;
-  padding: 0 8px;
+  gap: 3px;
+  min-height: 20px;
+  padding: 0 7px;
   border-radius: 999px;
   color: #087946;
   background: #e9f8f1;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
 .hub-selected-pill.preview {
