@@ -2756,12 +2756,35 @@ button:disabled {
 @media (max-width: 430px) {
   .app-background {
     padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
   }
 
   .phone-frame {
-    min-height: 100dvh;
+    /* Lock to exact viewport height so header + bottom nav are always visible
+       and only the middle content scrolls. svh = small viewport height,
+       handles iOS Safari + PWA standalone mode correctly. */
+    width: 100%;
+    height: 100svh;
+    min-height: 0;
+    max-height: 100svh;
     border-radius: 0;
     border: 0;
+    overflow: hidden;
+  }
+
+  .app-header {
+    flex-shrink: 0;
+  }
+
+  .app-content {
+    /* Content area scrolls. Padding-bottom accounts for the bottom-tabs height
+       plus iOS home-indicator safe area. */
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .bottom-tabs {
+    flex-shrink: 0;
   }
 
   .temperature-orbit {
