@@ -371,3 +371,28 @@ export async function fetchHistory(
     sample_count: row.sample_count ?? 0,
   }));
 }
+
+export type DashboardCardId = "heater" | "pump";
+
+export async function fetchDashboardPreferences(userId: string): Promise<DashboardCardId[] | null> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("user_dashboard_preferences")
+    .select("card_order")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) return null;
+  const raw = data?.card_order;
+  if (!Array.isArray(raw)) return null;
+  const valid = raw.filter((id): id is DashboardCardId => id === "heater" || id === "pump");
+  if (valid.length !== 2) return null;
+  return valid;
+}
+
+export async function saveDashboardPreferences(userId: string, cardOrder: DashboardCardId[]): Promise<void> {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("user_dashboard_preferences")
+    .upsert({ user_id: userId, card_order: cardOrder, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}

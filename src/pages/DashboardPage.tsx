@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type PointerEvent as ReactPointerEvent } from "react";
 import { ChevronDown, ChevronUp, Flame, PackagePlus, Power, Radio, Thermometer, Zap } from "lucide-react";
-import { fetchLatestCommand, sendCommand, type DeviceCommandType, type PoolDevice } from "../lib/deviceApi";
+import {
+  fetchDashboardPreferences,
+  fetchLatestCommand,
+  saveDashboardPreferences,
+  sendCommand,
+  type DashboardCardId,
+  type DeviceCommandType,
+  type PoolDevice,
+} from "../lib/deviceApi";
 import { isDirectMqttConfigured } from "../lib/mqttClient";
 import { useTransparentImage } from "../hooks/useTransparentImage";
 import pumpIconSrc from "../assets/pump-icon.png";
@@ -180,13 +188,47 @@ export function DashboardPage({
   const longPressRef = useRef<number | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Save card order locally and to Supabase. localStorage gives instant
+  // restore even before the network round-trip, Supabase makes it survive
+  // PWA reinstalls and syncs to other devices.
+  const hasHydratedRemotePrefsRef = useRef(false);
   useEffect(() => {
     try {
       window.localStorage.setItem(CARD_ORDER_STORAGE_KEY, JSON.stringify(cardOrder));
     } catch {
       // ignore
     }
-  }, [cardOrder]);
+
+    // Skip the very first effect run (which is just the initial state from
+    // localStorage). Only push to the server after the user actually reorders
+    // or after we've successfully hydrated from the server.
+    if (!hasHydratedRemotePrefsRef.current) return;
+    if (!userId) return;
+
+    const handle = window.setTimeout(() => {
+      void saveDashboardPreferences(userId, cardOrder as DashboardCardId[]).catch((err) => {
+        console.warn("Saving dashboard preferences failed", err);
+      });
+    }, 600);
+    return () => window.clearTimeout(handle);
+  }, [cardOrder, userId]);
+
+  // On mount (or when the user changes), fetch the persisted preferences from
+  // Supabase and prefer them over the localStorage cache.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void fetchDashboardPreferences(userId).then((remote) => {
+      if (cancelled) return;
+      if (remote) {
+        setCardOrder(remote as ReorderCardId[]);
+      }
+      hasHydratedRemotePrefsRef.current = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     return () => {
