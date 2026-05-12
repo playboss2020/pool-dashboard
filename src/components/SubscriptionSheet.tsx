@@ -66,9 +66,30 @@ export function SubscriptionSheet({ open, onClose, triggerReason }: Subscription
       setError("");
       return;
     }
-    document.body.style.overflow = "hidden";
+
+    // Lock the inner scroll container (.app-content) instead of body, since
+    // body is already locked. Remember the current scroll so we can restore
+    // it exactly when the modal closes — otherwise the dashboard "drifts"
+    // visually under the sheet on iOS.
+    const scrollEl = document.querySelector<HTMLElement>(".app-content");
+    const savedScrollTop = scrollEl?.scrollTop ?? 0;
+    const previousOverflow = scrollEl?.style.overflow ?? "";
+    const previousTouchAction = scrollEl?.style.touchAction ?? "";
+
+    if (scrollEl) {
+      scrollEl.style.overflow = "hidden";
+      scrollEl.style.touchAction = "none";
+    }
+
     return () => {
-      document.body.style.overflow = "";
+      if (scrollEl) {
+        scrollEl.style.overflow = previousOverflow;
+        scrollEl.style.touchAction = previousTouchAction;
+        // Restore the exact scroll position the user was at before opening
+        requestAnimationFrame(() => {
+          scrollEl.scrollTop = savedScrollTop;
+        });
+      }
     };
   }, [open]);
 
