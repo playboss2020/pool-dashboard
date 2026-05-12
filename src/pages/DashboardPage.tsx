@@ -12,6 +12,8 @@ type DashboardPageProps = {
   error: string;
   onRefresh: () => void;
   onCommandSettled: () => void;
+  subscriptionLocked?: boolean;
+  onSubscriptionRequired?: (reason: string) => void;
 };
 
 function formatValue(value: number | null | undefined, suffix = "") {
@@ -117,6 +119,8 @@ export function DashboardPage({
   error,
   onRefresh,
   onCommandSettled,
+  subscriptionLocked = false,
+  onSubscriptionRequired,
 }: DashboardPageProps) {
   const cleanPumpIconSrc = useTransparentImage(pumpIconSrc, 24, 14);
   const [optimisticPumpOn, setOptimisticPumpOn] = useState<boolean | null>(null);
@@ -367,6 +371,10 @@ export function DashboardPage({
   }
 
   async function sendDashboardCommand(commandType: DeviceCommandType, payload: Record<string, unknown> = {}) {
+    if (subscriptionLocked) {
+      onSubscriptionRequired?.("control your pool");
+      return false;
+    }
     try {
       setCommandError("");
       const command = await sendCommand(userId, commandType, payload);

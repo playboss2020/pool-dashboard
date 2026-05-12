@@ -11,10 +11,11 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { DashboardPage, NoDeviceDashboard } from "./pages/DashboardPage";
 import { EnterprisePage } from "./pages/EnterprisePage";
 import { LoginPage } from "./pages/LoginPage";
-import { PaywallPage } from "./pages/PaywallPage";
 import { SchedulesPage } from "./pages/SchedulesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { useSubscription } from "./hooks/useSubscription";
+import { SubscriptionSheet } from "./components/SubscriptionSheet";
+import { Lock } from "lucide-react";
 import { deviceId, selectDeviceId } from "./lib/supabase";
 import "./styles.css";
 
@@ -39,6 +40,8 @@ export default function App() {
   const [showHubSwitcher, setShowHubSwitcher] = useState(false);
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState("");
+  const [subSheetOpen, setSubSheetOpen] = useState(false);
+  const [subSheetReason, setSubSheetReason] = useState<string | undefined>();
   const auth = useAuth();
   const subscription = useSubscription(auth.user?.id);
   const { device, loading, error, refresh, refreshBurst } = useDevice();
@@ -126,8 +129,11 @@ export default function App() {
     return <LoginPage />;
   }
 
-  if (!subscription.loading && !subscription.active) {
-    return <PaywallPage onSignOut={() => auth.signOut()} />;
+  const subscriptionLocked = !subscription.loading && !subscription.active;
+
+  function requireSubscription(reason: string) {
+    setSubSheetReason(reason);
+    setSubSheetOpen(true);
   }
 
   return (
@@ -139,6 +145,16 @@ export default function App() {
       enterpriseEnabled={enterpriseEnabled}
     >
       {claimSuccess ? <div className="success-box app-success-banner">{claimSuccess}</div> : null}
+      {subscriptionLocked ? (
+        <div className="sub-locked-banner">
+          <Lock size={16} />
+          <div>
+            <strong>View-only mode</strong>
+            <span>Subscribe to control your pool, schedules, and devices.</span>
+          </div>
+          <button type="button" onClick={() => requireSubscription("unlock your account")}>Subscribe</button>
+        </div>
+      ) : null}
       {activeTab === "dashboard" && checkingDevices ? <div className="loading-box">Checking your hubs...</div> : null}
       {activeTab === "dashboard" && !checkingDevices && hasNoDevices ? (
         <NoDeviceDashboard error={devices.error} onAddDevice={() => setShowAddDevice(true)} />
@@ -151,6 +167,8 @@ export default function App() {
           error={error || devices.error}
           onRefresh={refresh}
           onCommandSettled={refreshBurst}
+          subscriptionLocked={subscriptionLocked}
+          onSubscriptionRequired={requireSubscription}
         />
       ) : null}
       {activeTab === "schedules" ? <SchedulesPage userId={auth.user.id} /> : null}
@@ -171,6 +189,11 @@ export default function App() {
         />
       ) : null}
       {showAddDevice ? <AddDeviceSheet onCancel={() => setShowAddDevice(false)} onClaimed={handleDeviceClaimed} /> : null}
+      <SubscriptionSheet
+        open={subSheetOpen}
+        onClose={() => setSubSheetOpen(false)}
+        triggerReason={subSheetReason}
+      />
     </PoolShell>
   );
 }
