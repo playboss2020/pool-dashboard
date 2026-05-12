@@ -4,34 +4,47 @@ import { requireSupabase } from "../lib/supabase";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
-const plans = [
+type BillingPeriod = "monthly" | "annual";
+
+type PlanPricing = { price: string; periodLabel: string; priceId: string | null; savings?: string };
+
+type PlanConfig = {
+  key: string;
+  name: string;
+  description: string;
+  items: string[];
+  monthly: PlanPricing;
+  annual: PlanPricing;
+  comingSoon?: boolean;
+  highlighted?: true;
+};
+
+const plans: PlanConfig[] = [
   {
     key: "home",
     name: "Home",
-    price: "$9",
-    period: "per month",
     description: "Simple, reliable pool control.",
     items: ["Mobile dashboard", "Pump and heater control", "Schedules", "Alerts", "Energy tracking"],
-    priceId: "price_1TW30oQXONGhI04M7KKJtcLx",
+    monthly: { price: "$9", periodLabel: "per month", priceId: "price_1TW30oQXONGhI04M7KKJtcLx" },
+    annual:  { price: "$7", periodLabel: "per month, billed yearly", priceId: import.meta.env.VITE_STRIPE_PRICE_HOME_ANNUAL ?? null, savings: "Save $24" },
   },
   {
     key: "pro",
     name: "Pro",
-    price: "$19",
-    period: "per month",
     description: "For property managers and pros.",
     items: ["Fleet dashboard", "Heat reservations", "Team roles", "Map view", "Priority support"],
-    priceId: "price_1TW31LQXONGhI04MM9mwzG1Z",
-    highlighted: true as const,
+    highlighted: true,
+    monthly: { price: "$19", periodLabel: "per month", priceId: "price_1TW31LQXONGhI04MM9mwzG1Z" },
+    annual:  { price: "$15", periodLabel: "per month, billed yearly", priceId: import.meta.env.VITE_STRIPE_PRICE_PRO_ANNUAL ?? null, savings: "Save $48" },
   },
   {
     key: "enterprise",
     name: "Enterprise",
-    price: "Custom",
-    period: "multi-site",
     description: "Larger fleets and custom needs.",
     items: ["Custom onboarding", "Bulk provisioning", "SLA options", "API integrations"],
-    priceId: "price_1TW326QXONGhI04MDgRi3AVH",
+    comingSoon: true,
+    monthly: { price: "Coming Soon", periodLabel: "", priceId: null },
+    annual:  { price: "Coming Soon", periodLabel: "", priceId: null },
   },
 ];
 
@@ -44,6 +57,7 @@ export type SubscriptionSheetProps = {
 export function SubscriptionSheet({ open, onClose, triggerReason }: SubscriptionSheetProps) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [period, setPeriod] = useState<BillingPeriod>("monthly");
 
   useEffect(() => {
     if (!open) {
@@ -59,7 +73,8 @@ export function SubscriptionSheet({ open, onClose, triggerReason }: Subscription
 
   if (!open) return null;
 
-  async function handleChoose(priceId: string, planKey: string) {
+  async function handleChoose(priceId: string | null, planKey: string) {
+    if (!priceId) return;
     setBusy(planKey);
     setError("");
     try {
@@ -107,36 +122,68 @@ export function SubscriptionSheet({ open, onClose, triggerReason }: Subscription
 
         {error && <div className="sub-sheet-error">{error}</div>}
 
+        <div className="sub-sheet-toggle" role="tablist" aria-label="Billing period">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={period === "monthly"}
+            className={period === "monthly" ? "active" : ""}
+            onClick={() => setPeriod("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={period === "annual"}
+            className={period === "annual" ? "active" : ""}
+            onClick={() => setPeriod("annual")}
+          >
+            Annual <span className="sub-sheet-toggle-badge">−18%</span>
+          </button>
+        </div>
+
         <div className="sub-sheet-plans">
-          {plans.map(plan => (
-            <article
-              key={plan.key}
-              className={`sub-sheet-plan${"highlighted" in plan && plan.highlighted ? " highlighted" : ""}`}
-            >
-              {"highlighted" in plan && plan.highlighted && <div className="sub-sheet-popular">MOST POPULAR</div>}
-              <span className="sub-sheet-plan-label">{plan.name}</span>
-              <div className="sub-sheet-price">
-                <h3>{plan.price}</h3>
-                <small>{plan.period}</small>
-              </div>
-              <p className="sub-sheet-desc">{plan.description}</p>
-              <button
-                type="button"
-                className={`sub-sheet-cta${"highlighted" in plan && plan.highlighted ? " primary" : ""}`}
-                disabled={!!busy}
-                onClick={() => handleChoose(plan.priceId, plan.key)}
+          {plans.map(plan => {
+            const pricing = plan[period];
+            const isDisabled = plan.comingSoon || !pricing.priceId;
+            return (
+              <article
+                key={plan.key}
+                className={`sub-sheet-plan${plan.highlighted ? " highlighted" : ""}${plan.comingSoon ? " coming-soon" : ""}`}
               >
-                {busy === plan.key
-                  ? <><Loader2 size={14} className="spin" /> Redirecting…</>
-                  : <>Choose {plan.name}<ArrowRight size={14} /></>}
-              </button>
-              <ul>
-                {plan.items.map(item => (
-                  <li key={item}><Check size={13} />{item}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
+                {plan.highlighted && !plan.comingSoon && <div className="sub-sheet-popular">MOST POPULAR</div>}
+                {pricing.savings && period === "annual" && !plan.comingSoon && (
+                  <div className="sub-sheet-savings">{pricing.savings}</div>
+                )}
+                <span className="sub-sheet-plan-label">{plan.name}</span>
+                <div className="sub-sheet-price">
+                  <h3>{pricing.price}</h3>
+                  {pricing.periodLabel && <small>{pricing.periodLabel}</small>}
+                </div>
+                <p className="sub-sheet-desc">{plan.description}</p>
+                <button
+                  type="button"
+                  className={`sub-sheet-cta${plan.highlighted && !plan.comingSoon ? " primary" : ""}${plan.comingSoon ? " soon" : ""}`}
+                  disabled={!!busy || isDisabled}
+                  onClick={() => pricing.priceId && handleChoose(pricing.priceId, plan.key)}
+                >
+                  {plan.comingSoon
+                    ? <>Coming Soon</>
+                    : !pricing.priceId
+                      ? <>Annual not configured</>
+                      : busy === plan.key
+                        ? <><Loader2 size={14} className="spin" /> Redirecting…</>
+                        : <>Choose {plan.name}<ArrowRight size={14} /></>}
+                </button>
+                <ul>
+                  {plan.items.map(item => (
+                    <li key={item}><Check size={13} />{item}</li>
+                  ))}
+                </ul>
+              </article>
+            );
+          })}
         </div>
 
         <footer className="sub-sheet-footer">
