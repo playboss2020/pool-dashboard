@@ -11,10 +11,29 @@
   box-sizing: border-box;
 }
 
+html, body {
+  /* Stop the iOS Safari/PWA rubber-band scroll when the user drags the
+     fixed header or bottom nav. Only the inner .app-content scroll area
+     is allowed to scroll. */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* Lock the body so dragging the header/footer doesn't drag the page */
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
 }
 
 button,
@@ -69,6 +88,8 @@ button:disabled {
   position: relative;
   min-height: 92px;
   padding: 14px 22px 10px;
+  /* Prevent the header bar from initiating a scroll gesture */
+  touch-action: pan-x;
 }
 
 .header-logo-wrap {
@@ -748,8 +769,11 @@ button:disabled {
 
 .app-content {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* Keep bounce limited to this area only — don't propagate to body */
+  overscroll-behavior: contain;
   padding: 0 18px 96px;
 }
 
@@ -1113,6 +1137,8 @@ button:disabled {
   padding: 10px 16px max(13px, env(safe-area-inset-bottom));
   border-top: 1px solid rgba(194, 229, 240, 0.72);
   background: rgba(252, 254, 255, 0.96);
+  /* Don't let touches here drag the page */
+  touch-action: pan-x;
 }
 
 .tab-button {
