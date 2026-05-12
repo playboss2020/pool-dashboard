@@ -64,6 +64,8 @@ export function useDevice() {
           pump_watts: numberOrNull(state.pump_watts),
           heater_watts: numberOrNull(state.heater_watts),
           total_kwh: numberOrNull(state.total_kwh),
+          run_kwh: numberOrNull(state.run_kwh),
+          last_run_kwh: numberOrNull(state.last_run_kwh),
           electricity_rate_per_kwh: current?.electricity_rate_per_kwh ?? numberOrNull(state.electricity_rate_per_kwh) ?? 0.18,
           temp_calibration_offset: numberOrNull(state.temp_calibration_offset),
           wattage_calibration_scale: numberOrNull(state.wattage_calibration_scale),
