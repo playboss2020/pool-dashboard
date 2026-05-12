@@ -15,6 +15,8 @@ export type PoolDevice = {
   pump_watts: number | null;
   heater_watts: number | null;
   total_kwh: number | null;
+  run_kwh: number | null;
+  last_run_kwh: number | null;
   electricity_rate_per_kwh: number | null;
   temp_calibration_offset: number | null;
   wattage_calibration_scale: number | null;
@@ -113,6 +115,8 @@ const DEVICE_SELECT_COLUMNS = [
   "pump_watts",
   "heater_watts",
   "total_kwh",
+  "run_kwh",
+  "last_run_kwh",
   "electricity_rate_per_kwh",
   "temp_calibration_offset",
   "wattage_calibration_scale",

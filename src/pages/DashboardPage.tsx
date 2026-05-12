@@ -501,8 +501,8 @@ export function DashboardPage({
             <div className="hero-water-temp hero-energy-chip">
               <Zap size={14} />
               <div>
-                <span>Total Energy</span>
-                <strong>{formatValue(device?.total_kwh, " kWh")}</strong>
+                <span>{(device?.pump_on || device?.heater_relay_on) ? "This Run" : "Last Run"}</span>
+                <strong>{formatValue(device?.run_kwh ?? device?.last_run_kwh ?? 0, " kWh")}</strong>
               </div>
             </div>
           </div>
@@ -716,8 +716,8 @@ export function DashboardPage({
           <div className="summary-divider" />
           <div className="summary-cell">
             <Zap size={18} />
-            <span>Total Energy</span>
-            <strong>{formatValue(device?.total_kwh, " kWh")}</strong>
+            <span>{(device?.pump_on || device?.heater_relay_on) ? "This Run" : "Last Run"}</span>
+            <strong>{formatValue(device?.run_kwh ?? device?.last_run_kwh ?? 0, " kWh")}</strong>
           </div>
         </div>
       </section>
