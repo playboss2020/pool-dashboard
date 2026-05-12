@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowRight, Check, Loader2, Lock, X } from "lucide-react";
 import { requireSupabase } from "../lib/supabase";
 
@@ -104,7 +105,7 @@ export function SubscriptionSheet({ open, onClose, triggerReason }: Subscription
     }
   }
 
-  return (
+  return createPortal(
     <div className="sub-sheet-backdrop" onClick={onClose}>
       <div className="sub-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="sub-sheet-grabber" />
@@ -190,6 +191,7 @@ export function SubscriptionSheet({ open, onClose, triggerReason }: Subscription
           <small>Cancel anytime · Secure checkout by Stripe</small>
         </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
