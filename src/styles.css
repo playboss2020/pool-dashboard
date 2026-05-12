@@ -544,24 +544,33 @@ button:disabled {
 
 .hub-switch-sheet {
   display: grid;
-  gap: 14px;
+  /* Three rows: header, toolbar, scrollable list. The list takes whatever
+     space is left (minmax(0,1fr) lets it shrink so overflow can kick in). */
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0;
   overflow: hidden;
-  max-height: min(84dvh, 720px);
-  padding: 18px;
+  height: min(84svh, 720px);
+  max-height: 84svh;
+  padding: 0;
   border-radius: 24px 24px 0 0;
   color: #1b1f24;
   background: rgba(247, 253, 255, 0.98);
   box-shadow: 0 -16px 44px rgba(11, 32, 49, 0.24);
 }
 
-.hub-switch-list,
-.hub-preview-block {
-  display: grid;
-  gap: 10px;
+.hub-switch-sheet > .health-sheet-header {
+  padding: 18px 18px 4px;
 }
 
 .hub-switch-list {
-  overflow: auto;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: 4px 18px 24px;
+  min-height: 0;
 }
 
 .hub-switch-card {
@@ -685,7 +694,8 @@ button:disabled {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  padding: 14px 18px 8px;
+  padding: 10px 18px 12px;
+  border-bottom: 1px solid rgba(11, 131, 185, 0.08);
 }
 
 .hub-switch-search {
