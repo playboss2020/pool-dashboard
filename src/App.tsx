@@ -141,7 +141,9 @@ export default function App() {
     return <LoginPage />;
   }
 
-  const subscriptionLocked = !subscription.loading && !subscription.active;
+  // Admins (emails listed in VITE_ADMIN_EMAILS) bypass the paywall entirely.
+  // They get full access to every feature — including Enterprise — for free.
+  const subscriptionLocked = !isAdmin && !subscription.loading && !subscription.active;
 
   function requireSubscription(reason: string) {
     setSubSheetReason(reason);
