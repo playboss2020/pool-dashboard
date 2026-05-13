@@ -405,3 +405,49 @@ export async function markStaleDevicesOffline(thresholdSeconds = 120): Promise<n
   if (error) throw error;
   return typeof data === "number" ? data : 0;
 }
+
+export type UserProfile = {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("user_profiles")
+    .select("user_id,first_name,last_name,phone,created_at,updated_at")
+    .eq("user_id", userId)
+    .maybeSingle<UserProfile>();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveUserProfile(profile: { user_id: string; first_name?: string | null; last_name?: string | null; phone?: string | null }) {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("user_profiles")
+    .upsert({ ...profile, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+const SUPABASE_URL_FOR_PORTAL = import.meta.env.VITE_SUPABASE_URL as string;
+export async function openStripeCustomerPortal(): Promise<string> {
+  const client = requireSupabase();
+  const { data: { session } } = await client.auth.getSession();
+  if (!session) throw new Error("Not signed in");
+  const res = await fetch(`${SUPABASE_URL_FOR_PORTAL}/functions/v1/stripe-create-portal`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ return_url: window.location.origin }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Could not open billing portal");
+  return data.url as string;
+}

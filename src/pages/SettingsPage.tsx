@@ -1,32 +1,136 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   Activity,
   ChevronRight,
   Clock3,
   Cpu,
+  CreditCard,
   DollarSign,
   LogOut,
   PackagePlus,
   Pencil,
+  Phone,
   Radio,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
   Thermometer,
   Trash2,
+  User,
   Wifi,
   X,
   Zap,
 } from "lucide-react";
 import { AddDeviceSheet } from "../components/AddDeviceSheet";
+import { SubscriptionSheet } from "../components/SubscriptionSheet";
 import { clearSelectedDeviceId, deviceId, selectDeviceId } from "../lib/supabase";
-import { sendCommand, unclaimDevice, updateDeviceName, updateElectricityRate, type PoolDevice } from "../lib/deviceApi";
+import {
+  fetchUserProfile,
+  openStripeCustomerPortal,
+  saveUserProfile,
+  sendCommand,
+  unclaimDevice,
+  updateDeviceName,
+  updateElectricityRate,
+  type PoolDevice,
+  type UserProfile,
+} from "../lib/deviceApi";
 import { useAuth } from "../hooks/useAuth";
+import { useSubscription } from "../hooks/useSubscription";
 
 type SettingsPageProps = {
   device: PoolDevice | null;
   userId: string;
 };
+
+function ProfileEditSheet({
+  profile,
+  saving,
+  onCancel,
+  onSave,
+}: {
+  profile: UserProfile | null;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (next: { first_name: string; last_name: string; phone: string }) => void;
+}) {
+  const [firstName, setFirstName] = useState(profile?.first_name ?? "");
+  const [lastName, setLastName] = useState(profile?.last_name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
+
+  return createPortal(
+    <div className="calibration-backdrop" role="dialog" aria-modal="true" onClick={onCancel}>
+      <form
+        className="rate-sheet"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave({ first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim() });
+        }}
+      >
+        <div className="health-sheet-header">
+          <div>
+            <span className="eyebrow">About you</span>
+            <h3>Profile</h3>
+          </div>
+          <button type="button" onClick={onCancel} aria-label="Close profile" disabled={saving}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <label className="rate-input-wrap compact">
+          <span>First name</span>
+          <div>
+            <User size={20} />
+            <input
+              autoComplete="given-name"
+              placeholder="Lucas"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              maxLength={60}
+            />
+          </div>
+        </label>
+
+        <label className="rate-input-wrap compact">
+          <span>Last name</span>
+          <div>
+            <User size={20} />
+            <input
+              autoComplete="family-name"
+              placeholder="Palma"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              maxLength={60}
+            />
+          </div>
+        </label>
+
+        <label className="rate-input-wrap compact">
+          <span>Phone (optional)</span>
+          <div>
+            <Phone size={20} />
+            <input
+              autoComplete="tel"
+              type="tel"
+              placeholder="(555) 555-0128"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={30}
+            />
+          </div>
+        </label>
+
+        <div className="rate-actions">
+          <button type="button" onClick={onCancel} disabled={saving}>Cancel</button>
+          <button type="submit" className="confirm" disabled={saving}>{saving ? "Saving…" : "Save"}</button>
+        </div>
+      </form>
+    </div>,
+    document.body
+  );
+}
 
 type CalibrationMode = "temperature" | "wattage";
 
@@ -442,6 +546,12 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
   const [showAddDevice, setShowAddDevice] = useState(false);
   const [showNameSheet, setShowNameSheet] = useState(false);
   const [showRemoveDevice, setShowRemoveDevice] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSubSheet, setShowSubSheet] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
+  const subscription = useSubscription(userId);
   const [removingDevice, setRemovingDevice] = useState(false);
   const [saving, setSaving] = useState("");
   const [error, setError] = useState("");
@@ -455,6 +565,48 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
     setElectricityRate(typeof device?.electricity_rate_per_kwh === "number" ? device.electricity_rate_per_kwh : 0.18);
     setDeviceName(device?.name || "Pool Hub");
   }, [device?.electricity_rate_per_kwh, device?.name, device?.temp_calibration_offset, device?.wattage_calibration_scale]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    void fetchUserProfile(userId)
+      .then((p) => { if (!cancelled) setProfile(p); })
+      .catch((err) => console.warn("Profile load failed", err));
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  async function handleSaveProfile(next: { first_name: string; last_name: string; phone: string }) {
+    setProfileSaving(true);
+    try {
+      await saveUserProfile({
+        user_id: userId,
+        first_name: next.first_name || null,
+        last_name: next.last_name || null,
+        phone: next.phone || null,
+      });
+      setProfile({ user_id: userId, first_name: next.first_name || null, last_name: next.last_name || null, phone: next.phone || null });
+      setShowProfile(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save profile");
+    } finally {
+      setProfileSaving(false);
+    }
+  }
+
+  async function handleManageBilling() {
+    setOpeningPortal(true);
+    try {
+      const url = await openStripeCustomerPortal();
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open billing portal");
+      setOpeningPortal(false);
+    }
+  }
+
+  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
+  const planLabel = subscription.plan === "home" ? "Home" : subscription.plan === "pro" ? "Pro" : subscription.plan === "enterprise" ? "Enterprise" : "Not subscribed";
+  const planPrice = subscription.plan === "home" ? "$9/mo" : subscription.plan === "pro" ? "$19/mo" : subscription.plan === "enterprise" ? "Custom" : "";
 
   async function saveCalibration(nextTempOffset = tempOffset, nextWattageScale = wattageScale) {
     setError("");
@@ -534,6 +686,43 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
           <h2>Settings</h2>
         </div>
       </section>
+
+      <article className="settings-card">
+        <button className="settings-row settings-action-row" type="button" onClick={() => setShowProfile(true)}>
+          <div className="settings-row-icon">
+            <User size={18} />
+          </div>
+          <div className="settings-row-text">
+            <span>Profile</span>
+            <strong>{fullName || "Add your name"}</strong>
+            {profile?.phone ? <small>{profile.phone}</small> : null}
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        <button
+          className="settings-row settings-action-row"
+          type="button"
+          onClick={() => subscription.active ? void handleManageBilling() : setShowSubSheet(true)}
+          disabled={openingPortal}
+        >
+          <div className="settings-row-icon">
+            <CreditCard size={18} />
+          </div>
+          <div className="settings-row-text">
+            <span>Membership</span>
+            <strong>{planLabel}{planPrice ? ` · ${planPrice}` : ""}</strong>
+            <small>
+              {subscription.loading
+                ? "Checking subscription…"
+                : subscription.active
+                  ? (openingPortal ? "Opening billing portal…" : "Manage plan, update card, or cancel")
+                  : "Subscribe to control your pool"}
+            </small>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+      </article>
 
       <article className="settings-card">
         <div className="settings-row">
@@ -735,6 +924,21 @@ export function SettingsPage({ device, userId }: SettingsPageProps) {
           onConfirm={() => void removeDeviceFromAccount()}
         />
       ) : null}
+
+      {showProfile ? (
+        <ProfileEditSheet
+          profile={profile}
+          saving={profileSaving}
+          onCancel={() => setShowProfile(false)}
+          onSave={handleSaveProfile}
+        />
+      ) : null}
+
+      <SubscriptionSheet
+        open={showSubSheet}
+        onClose={() => setShowSubSheet(false)}
+        triggerReason="unlock your account"
+      />
 
       {showAddDevice ? (
         <AddDeviceSheet
