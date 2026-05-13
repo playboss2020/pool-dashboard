@@ -45,11 +45,30 @@ export function useDevice() {
   const applyMqttState = useCallback(
     (payload: string) => {
       try {
-        const state = JSON.parse(payload) as Partial<PoolDevice>;
+        const state = JSON.parse(payload) as Partial<PoolDevice> & { ts?: number; published_at?: string };
         if (state.device_id && state.device_id !== deviceId) return;
 
         const current = deviceRef.current;
-        const now = new Date().toISOString();
+
+        // MQTT brokers deliver RETAINED messages (the last message they held)
+        // when a client subscribes. That retained message could be days old —
+        // it does NOT prove the hub is alive right now. So we never trust MQTT
+        // alone for online_status or last_seen. The cloud row (updated by the
+        // hub's device-state HTTP calls every ~30s) is the source of truth.
+        //
+        // If the payload carries a fresh `ts` (epoch seconds) or `published_at`
+        // ISO string from the hub firmware, we accept it as a real liveness
+        // signal — but only when it's recent (< 30s).
+        const nowMs = Date.now();
+        let publishedAtMs = 0;
+        if (typeof state.ts === "number") {
+          publishedAtMs = state.ts > 1e12 ? state.ts : state.ts * 1000;
+        } else if (typeof state.published_at === "string") {
+          const parsed = Date.parse(state.published_at);
+          if (!Number.isNaN(parsed)) publishedAtMs = parsed;
+        }
+        const isLivePayload = publishedAtMs > 0 && (nowMs - publishedAtMs) < 30000;
+
         const nextDevice: PoolDevice = {
           id: current?.id ?? state.id ?? deviceId,
           user_id: current?.user_id ?? state.user_id ?? "",
@@ -69,12 +88,14 @@ export function useDevice() {
           electricity_rate_per_kwh: current?.electricity_rate_per_kwh ?? numberOrNull(state.electricity_rate_per_kwh) ?? 0.18,
           temp_calibration_offset: numberOrNull(state.temp_calibration_offset),
           wattage_calibration_scale: numberOrNull(state.wattage_calibration_scale),
-          last_seen: now,
-          online_status: "online",
+          // Preserve the cloud's last_seen / online_status. Only bump them if
+          // the MQTT payload self-identifies as a fresh, live publish.
+          last_seen: isLivePayload ? new Date().toISOString() : current?.last_seen ?? null,
+          online_status: isLivePayload ? "online" : current?.online_status ?? "offline",
           firmware_version: state.firmware_version ?? current?.firmware_version ?? null,
           wifi_ssid: state.wifi_ssid ?? current?.wifi_ssid ?? null,
           wifi_rssi: typeof state.wifi_rssi === "number" ? state.wifi_rssi : current?.wifi_rssi ?? null,
-          updated_at: now,
+          updated_at: current?.updated_at ?? new Date().toISOString(),
         };
 
         setDeviceIfChanged(nextDevice);
