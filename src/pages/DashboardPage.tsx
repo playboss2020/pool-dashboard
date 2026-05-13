@@ -168,6 +168,16 @@ export function DashboardPage({
   const dialArcPath = `M ${polarToCartesian(120, 120, 84, dialStartAngle).x} ${polarToCartesian(120, 120, 84, dialStartAngle).y} A 84 84 0 1 1 ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).x} ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).y}`;
   const dialSetpointKnob = polarToCartesian(120, 120, 84, dialSetpointAngle);
   const dialCurrentKnob = polarToCartesian(120, 120, 84, dialCurrentAngle);
+  // Anchor for the "Currently NN°" label, just outside the dial's outer
+  // tick ring (radius 102). The translate below pushes the label fully
+  // outward in the direction of the pointer so the dial is never covered.
+  const currentLabelPos = polarToCartesian(120, 120, 115, dialCurrentAngle);
+  const _angleRad = (dialCurrentAngle * Math.PI) / 180;
+  // -50% + dir*50%: at dir=+1 → 0% (label's left/top edge at anchor),
+  // at dir=-1 → -100% (label's right/bottom edge at anchor). So the label's
+  // inner edge sits ON the anchor and the rest of the label extends outward.
+  const labelTranslateX = `${-50 + Math.cos(_angleRad) * 50}%`;
+  const labelTranslateY = `${-50 + Math.sin(_angleRad) * 50}%`;
   const dialTicks = useMemo(
     () =>
       Array.from({ length: 48 }, (_, idx) => {
@@ -668,7 +678,19 @@ export function DashboardPage({
           </div>
           <span className="dial-label dial-label-min">{dialMin}°</span>
           <span className="dial-label dial-label-max">{dialMax}°</span>
-          <span className="dial-current-text">
+          <span
+            className="dial-current-text moving"
+            style={
+              {
+                left: `${(currentLabelPos.x / 240) * 100}%`,
+                top: `${(currentLabelPos.y / 240) * 100}%`,
+                // Push the label OUTWARD from the dial center. The label's
+                // inner edge (closest to dial) sits at the anchor point at
+                // radius 115, so the entire label stays outside the dial.
+                transform: `translate(${labelTranslateX}, ${labelTranslateY})`,
+              } as CSSProperties
+            }
+          >
             Currently {formatValue(temp, "°")}
           </span>
           <div className="dial-controls inline">
