@@ -169,6 +169,13 @@ export function DashboardPage({
   const dialSetpointKnob = polarToCartesian(120, 120, 84, dialSetpointAngle);
   const dialCurrentKnob = polarToCartesian(120, 120, 84, dialCurrentAngle);
   const currentLabelPos = polarToCartesian(120, 120, 108, dialCurrentAngle);
+  // Direction pointing OUT from the dial center. Used to translate the
+  // "Currently 87°" label so its inner edge sits at the anchor — meaning the
+  // label is always positioned outside the dial, on whichever side the
+  // pointer is on. Cold temps end up on the lower-left, hot on the lower-right.
+  const _angleRad = (dialCurrentAngle * Math.PI) / 180;
+  const labelTranslateX = `${-50 - Math.cos(_angleRad) * 50}%`;
+  const labelTranslateY = `${-50 - Math.sin(_angleRad) * 50}%`;
   const dialTicks = useMemo(
     () =>
       Array.from({ length: 48 }, (_, idx) => {
@@ -675,6 +682,7 @@ export function DashboardPage({
               {
                 left: `${(currentLabelPos.x / 240) * 100}%`,
                 top: `${(currentLabelPos.y / 240) * 100}%`,
+                transform: `translate(${labelTranslateX}, ${labelTranslateY})`,
               } as CSSProperties
             }
           >

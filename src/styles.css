@@ -2755,8 +2755,17 @@ button:disabled {
 
 .dial-current-text.moving {
   right: auto;
-  transform: translate(-8px, -12px);
+  /* Inline transform from React positions the label outside the dial in any
+     direction based on the current temperature angle. Don't override here. */
   white-space: nowrap;
+  /* Subtle pill background so the label is readable wherever it lands */
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(7, 50, 80, 0.55);
+  color: rgba(231, 245, 255, 0.95);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: transform 220ms ease-out, left 220ms ease-out, top 220ms ease-out;
 }
 
 .dial-controls {
