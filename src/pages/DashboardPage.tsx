@@ -168,14 +168,6 @@ export function DashboardPage({
   const dialArcPath = `M ${polarToCartesian(120, 120, 84, dialStartAngle).x} ${polarToCartesian(120, 120, 84, dialStartAngle).y} A 84 84 0 1 1 ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).x} ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).y}`;
   const dialSetpointKnob = polarToCartesian(120, 120, 84, dialSetpointAngle);
   const dialCurrentKnob = polarToCartesian(120, 120, 84, dialCurrentAngle);
-  const currentLabelPos = polarToCartesian(120, 120, 108, dialCurrentAngle);
-  // Direction pointing OUT from the dial center. Used to translate the
-  // "Currently 87°" label so its inner edge sits at the anchor — meaning the
-  // label is always positioned outside the dial, on whichever side the
-  // pointer is on. Cold temps end up on the lower-left, hot on the lower-right.
-  const _angleRad = (dialCurrentAngle * Math.PI) / 180;
-  const labelTranslateX = `${-50 - Math.cos(_angleRad) * 50}%`;
-  const labelTranslateY = `${-50 - Math.sin(_angleRad) * 50}%`;
   const dialTicks = useMemo(
     () =>
       Array.from({ length: 48 }, (_, idx) => {
@@ -676,16 +668,7 @@ export function DashboardPage({
           </div>
           <span className="dial-label dial-label-min">{dialMin}°</span>
           <span className="dial-label dial-label-max">{dialMax}°</span>
-          <span
-            className="dial-current-text moving"
-            style={
-              {
-                left: `${(currentLabelPos.x / 240) * 100}%`,
-                top: `${(currentLabelPos.y / 240) * 100}%`,
-                transform: `translate(${labelTranslateX}, ${labelTranslateY})`,
-              } as CSSProperties
-            }
-          >
+          <span className="dial-current-text">
             Currently {formatValue(temp, "°")}
           </span>
           <div className="dial-controls inline">

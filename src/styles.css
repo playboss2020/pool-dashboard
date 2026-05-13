@@ -2744,28 +2744,25 @@ button:disabled {
   right: 14px;
 }
 
+/* "Currently 74°" pill — fixed at the top-center of the dial container,
+   outside the dial arc (which sweeps from 140° to 40°, leaving the top free).
+   Never overlaps the dial, regardless of current temperature value. */
 .dial-current-text {
   position: absolute;
-  right: 8px;
-  top: 38px;
-  color: rgba(209, 236, 255, 0.86);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.dial-current-text.moving {
-  right: auto;
-  /* Inline transform from React positions the label outside the dial in any
-     direction based on the current temperature angle. Don't override here. */
-  white-space: nowrap;
-  /* Subtle pill background so the label is readable wherever it lands */
-  padding: 3px 9px;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
   border-radius: 999px;
   background: rgba(7, 50, 80, 0.55);
   color: rgba(231, 245, 255, 0.95);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  transition: transform 220ms ease-out, left 220ms ease-out, top 220ms ease-out;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .dial-controls {
