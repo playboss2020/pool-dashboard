@@ -168,10 +168,11 @@ export function DashboardPage({
   const dialArcPath = `M ${polarToCartesian(120, 120, 84, dialStartAngle).x} ${polarToCartesian(120, 120, 84, dialStartAngle).y} A 84 84 0 1 1 ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).x} ${polarToCartesian(120, 120, 84, dialStartAngle + dialSweep).y}`;
   const dialSetpointKnob = polarToCartesian(120, 120, 84, dialSetpointAngle);
   const dialCurrentKnob = polarToCartesian(120, 120, 84, dialCurrentAngle);
-  // Anchor for the "Currently NN°" label, just outside the dial's outer
-  // tick ring (radius 102). The translate below pushes the label fully
-  // outward in the direction of the pointer so the dial is never covered.
-  const currentLabelPos = polarToCartesian(120, 120, 115, dialCurrentAngle);
+  // Anchor for the "Currently NN°" label. Outer dial tick ring is at radius
+  // 102, so 106 is just 4px beyond it — visually tight without overlapping.
+  // The translate below pushes the label fully outward in the direction of
+  // the pointer so the dial geometry is never covered.
+  const currentLabelPos = polarToCartesian(120, 120, 106, dialCurrentAngle);
   const _angleRad = (dialCurrentAngle * Math.PI) / 180;
   // -50% + dir*50%: at dir=+1 → 0% (label's left/top edge at anchor),
   // at dir=-1 → -100% (label's right/bottom edge at anchor). So the label's
