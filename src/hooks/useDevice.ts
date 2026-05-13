@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { deviceId, supabase } from "../lib/supabase";
-import { fetchDevice, type PoolDevice } from "../lib/deviceApi";
+import { fetchDevice, markStaleDevicesOffline, type PoolDevice } from "../lib/deviceApi";
 import { isDirectMqttConfigured, subscribeDirectMqttState } from "../lib/mqttClient";
 
 const DEVICE_REFRESH_MS = isDirectMqttConfigured() ? 60000 : 15000;
@@ -91,6 +91,12 @@ export function useDevice() {
 
     try {
       setError("");
+      // Flip any stale "online" rows to "offline" before reading. This keeps
+      // cloud status in sync with reality without needing a server-side cron.
+      // Fire-and-forget — don't block the actual fetch on this.
+      void markStaleDevicesOffline().catch((err) => {
+        console.warn("Stale offline check failed", err);
+      });
       const nextDevice = await fetchDevice();
       setDeviceIfChanged(nextDevice);
     } catch (err) {

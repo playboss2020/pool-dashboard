@@ -396,3 +396,12 @@ export async function saveDashboardPreferences(userId: string, cardOrder: Dashbo
     .upsert({ user_id: userId, card_order: cardOrder, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
+
+export async function markStaleDevicesOffline(thresholdSeconds = 120): Promise<number> {
+  const client = requireSupabase();
+  const { data, error } = await client.rpc("mark_stale_devices_offline", {
+    p_threshold_seconds: thresholdSeconds,
+  });
+  if (error) throw error;
+  return typeof data === "number" ? data : 0;
+}
